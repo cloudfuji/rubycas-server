@@ -14,7 +14,7 @@ class CASServer::Authenticators::WardenAuth < CASServer::Authenticators::Base
   end
 
   def validate(credentials)
-    env['warden'].authenticated!
+    env['warden'].authenticate!
 
     if env['warden'].authenticated?
         true
