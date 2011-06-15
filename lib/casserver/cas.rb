@@ -1,7 +1,7 @@
 require 'uri'
 require 'net/https'
 
-require 'casserver/model'
+require "#{File.expand_path(File.dirname(__FILE__))}/model"
 
 # Encapsulates CAS functionality. This module is meant to be included in
 # the CASServer::Controllers module.

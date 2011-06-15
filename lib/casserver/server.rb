@@ -1,7 +1,7 @@
 require 'sinatra/base'
 require "#{File.expand_path(File.dirname(__FILE__))}/localization.rb"
-require 'casserver/utils.rb'
-require 'casserver/cas.rb'
+require "#{File.expand_path(File.dirname(__FILE__))}/utils.rb"
+require "#{File.expand_path(File.dirname(__FILE__))}/cas.rb"
 
 require 'logger'
 $LOG ||= Logger.new(STDOUT)
@@ -202,7 +202,7 @@ module CASServer
             else
               # the authenticator class hasn't yet been loaded, so lets try to load it from the casserver/authenticators directory
               auth_rb = authenticator[:class].underscore.gsub('cas_server/', '')
-              require 'casserver/'+auth_rb
+              require "#{File.expand_path(File.dirname(__FILE__))}/"+auth_rb
             end
             auth << authenticator[:class].constantize
           end
@@ -213,7 +213,7 @@ module CASServer
           else
             # the authenticator class hasn't yet been loaded, so lets try to load it from the casserver/authenticators directory
             auth_rb = config[:authenticator][:class].underscore.gsub('cas_server/', '')
-            require 'casserver/'+auth_rb
+            require '#{File.expand_path(File.dirname(__FILE__))}/'+auth_rb
           end
 
           auth << config[:authenticator][:class].constantize
