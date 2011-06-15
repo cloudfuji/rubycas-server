@@ -1,7 +1,7 @@
 require 'sinatra/base'
-require 'casserver/localization'
-require 'casserver/utils'
-require 'casserver/cas'
+require "#{File.expand_path(File.dirname(__FILE__))}/localization.rb"
+require 'casserver/utils.rb'
+require 'casserver/cas.rb'
 
 require 'logger'
 $LOG ||= Logger.new(STDOUT)

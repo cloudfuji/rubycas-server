@@ -9,18 +9,12 @@ rescue LoadError
 end
 
 class CASServer::Authenticators::WardenAuth < CASServer::Authenticators::Base
-  def self.setup(options)
-      # if setting other settings in the config.yml, do checks here
-  end
 
   def validate(credentials)
-    env['warden'].authenticate!
-
-    if env['warden'].authenticated?
-        true
-    else
-        false
-    end
+  	read_standard_credentials(credentials)
+	
+    return true if @request.env['warden'].authenticated?
+	return false
   end
 
 end
