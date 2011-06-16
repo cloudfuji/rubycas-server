@@ -1,4 +1,4 @@
-require 'casserver/authenticators/base'
+require "#{File.expand_path(File.dirname(__FILE__))}/base"
 require 'uri'
 require 'net/http'
 require 'net/https'
