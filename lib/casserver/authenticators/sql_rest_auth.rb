@@ -1,4 +1,4 @@
-require 'casserver/authenticators/sql_encrypted'
+require "#{File.expand_path(File.dirname(__FILE__))}/sql_encrypted"
 
 require 'digest/sha1'
 
