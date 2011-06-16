@@ -1,4 +1,4 @@
-require 'casserver/authenticators/sql'
+require "#{File.expand_path(File.dirname(__FILE__))}/sql"
 
 # These were pulled directly from Authlogic, and new ones can be added
 # just by including new Crypto Providers
