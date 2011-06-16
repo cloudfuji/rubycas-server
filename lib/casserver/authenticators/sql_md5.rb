@@ -1,4 +1,4 @@
-require 'casserver/authenticators/sql'
+require "#{File.expand_path(File.dirname(__FILE__))}/sql"
 
 require 'digest/md5'
 
