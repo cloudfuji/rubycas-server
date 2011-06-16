@@ -1,5 +1,5 @@
 # encoding: UTF-8
-require '"#{File.expand_path(File.dirname(__FILE__))}/base'
+require "#{File.expand_path(File.dirname(__FILE__))}/base"
 
 # Dummy authenticator used for testing.
 # Accepts any username as valid as long as the password is "testpassword"; otherwise authentication fails.
