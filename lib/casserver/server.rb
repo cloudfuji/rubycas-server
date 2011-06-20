@@ -16,15 +16,16 @@ module CASServer
     set :app_file, __FILE__
     # set :public, Proc.new { settings.config[:public_dir] || File.join(root, "..", "..", "public") }
     
-    set :public, File.expand_path(File.dirname(__FILE__) + '/../../public')
     set :views, File.expand_path(File.dirname(__FILE__) + '/views')
+    set :public, File.expand_path(File.dirname(__FILE__) + '/../../public')
 
     config = HashWithIndifferentAccess.new(
       :maximum_unused_login_ticket_lifetime => 5.minutes,
       :maximum_unused_service_ticket_lifetime => 5.minutes, # CAS Protocol Spec, sec. 3.2.1 (recommended expiry time)
       :maximum_session_lifetime => 2.days, # all tickets are deleted after this period of time
       :log => {:file => 'casserver.log', :level => 'DEBUG'},
-      :uri_path => ""
+      :uri_path => "",
+      :theme_path => ""
     )
     set :config, config
 
@@ -39,6 +40,7 @@ module CASServer
       public_dir = File.expand_path(public_dir)
       
       path = File.expand_path(public_dir + unescape(request.path_info.gsub(/^#{settings.config[:uri_path]}/,'')))
+      
       return if path[0, public_dir.length] != public_dir
       return unless File.file?(path)
 
@@ -282,6 +284,7 @@ module CASServer
       @theme = settings.config[:theme]
       @organization = settings.config[:organization]
       @uri_path = settings.config[:uri_path]
+      @theme_path = settings.config[:theme_path]
       @infoline = settings.config[:infoline]
       @custom_views = settings.config[:custom_views]
       @template_engine = settings.config[:template_engine] || :erb
@@ -290,6 +293,7 @@ module CASServer
         @template_engine = @template_engine.to_sym
       end
     end
+
 
     # The #.#.# comments (e.g. "2.1.3") refer to section numbers in the CAS protocol spec
     # under http://www.ja-sig.org/products/cas/overview/protocol/index.html
