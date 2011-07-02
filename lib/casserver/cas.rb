@@ -263,7 +263,7 @@ module CASServer::CAS
     end
   end
 
-  def service_uri_with_ticket(service, st)
+  def service_uri_with_ticket(service, st, redirect_url=nil)
     raise ArgumentError, "Second argument must be a ServiceTicket!" unless st.kind_of? CASServer::Model::ServiceTicket
 
     # This will choke with a URI::InvalidURIError if service URI is not properly URI-escaped...
@@ -280,7 +280,14 @@ module CASServer::CAS
       query_separator = "?"
     end
 
-    service_with_ticket = service + query_separator + "ticket=" + st.ticket
+    redirect_url = "&redirect=#{redirect_url}" unless redirect_url.nil?
+
+    $LOG.debug("Redirect url: #{redirect_url}")
+
+
+    service_with_ticket = "#{service}#{query_separator}ticket=#{st.ticket}#{redirect_url}"
+
+    $LOG.debug("Service with ticket: #{service_with_ticket}")
     service_with_ticket
   end
 

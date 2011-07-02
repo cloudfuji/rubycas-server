@@ -313,6 +313,7 @@ module CASServer
       @service = clean_service_url(params['service'])
       @renew = params['renew']
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
+      @redirect_url = params['redirect'] unless params['redirect'].nil?
 
       if tgc = request.cookies['tgt']
         tgt, tgt_error = validate_ticket_granting_ticket(tgc)
@@ -462,9 +463,13 @@ module CASServer
             @st = generate_service_ticket(@service, @username, tgt)
 
             begin
-              service_with_ticket = service_uri_with_ticket(@service, @st)
+              service_with_ticket = service_uri_with_ticket(@service, @st, params['redirect'])
 
+              $LOG.info("Params: #{params.inspect}")
               $LOG.info("Redirecting authenticated user '#{@username}' at '#{@st.client_hostname}' to service '#{@service}'")
+              $LOG.info("URL: #{service_with_ticket}")
+              $LOG.info("Service ticket: #{@st.inspect}")
+              
               redirect service_with_ticket, 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
             rescue URI::InvalidURIError
               $LOG.error("The service '#{@service}' is not a valid URI!")

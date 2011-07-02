@@ -1,6 +1,11 @@
 <%# coding: UTF-8 -%>
 <form method="post" action="<%= @form_action || "login" %>" id="login-form"
       onsubmit="submitbutton = document.getElementById('login-submit'); submitbutton.value='<%= _("Please wait...") %>'; submitbutton.disabled=true; return true;">
+
+  <% if @redirect_url or true %>\
+   <input type="hidden" id="redirect" name="redirect" value="<%= @redirect_url %>" />
+  <% end %>
+
   <table id="form-layout">
     <tr>
       <td id="username-label-container">

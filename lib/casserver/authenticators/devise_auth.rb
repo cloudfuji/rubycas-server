@@ -18,7 +18,22 @@ class CASServer::Authenticators::DeviseAuth < CASServer::Authenticators::Base
     user = User.find_by_email(@username)
     
     # to check if find didn't return nil. can also do with !nil?
-    if user.respond_to?(:valid_password?) and user.valid_password?(@password)
+    if user.try(:valid_password?, @password)
+
+      if @options[:extra_attributes].blank?
+        $LOG.warn "WTF, no extra attributes?"
+      else
+        $LOG.warn "FILLING IT UP"
+        @options[:extra_attributes].each do |method|
+          $LOG.warn "#{method} = #{user.send(method)}"
+          @extra_attributes[method] = user.send(method)
+        end
+      end
+
+      $LOG.warn "-"*30
+      $LOG.warn @extra_attribues.inspect
+      $LOG.warn "-"*30
+
       return true
     end
 
