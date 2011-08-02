@@ -437,6 +437,9 @@ module CASServer
             :service => @service,
             :request => @env
           )
+
+          @username = auth.username
+
           if credentials_are_valid
             extra_attributes.merge!(auth.extra_attributes) unless auth.extra_attributes.blank?
             successful_authenticator = auth
