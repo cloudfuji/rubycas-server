@@ -15,7 +15,7 @@ class CASServer::Authenticators::DeviseAuth < CASServer::Authenticators::Base
   	
     # Assumes 'email' as the column name if not specified
     username_column = @options[:username_column] || 'email'
-    results = User.find(:all, :conditions => ["#{username_column} = ?", @username,)
+    results = User.find(:all, :conditions => ["#{username_column} = ?", @username])
     
     if results.length == 1
       user = results.first
