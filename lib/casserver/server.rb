@@ -1,6 +1,19 @@
 require 'sinatra/base'
 require "#{File.expand_path(File.dirname(__FILE__))}/localization.rb"
 require "#{File.expand_path(File.dirname(__FILE__))}/utils.rb"
+
+require 'yaml'
+
+@@cas_config = nil
+
+def unique_field
+  if @@cas_config.nil?
+    config_file = ENV['CONFIG_FILE'] || "/etc/rubycas-server/config.yml"
+    @@cas_config = YAML.load_file(config_file)
+  end
+  @@cas_config['unique_column'] || "username"
+end
+
 require "#{File.expand_path(File.dirname(__FILE__))}/cas.rb"
 
 require 'logger'
@@ -321,7 +334,7 @@ module CASServer
 
       if tgt and !tgt_error
         @message = {:type => 'notice',
-          :message => _("You are currently logged in as '%s'. If this is not you, please log in below.") % tgt.username }
+          :message => _("You are currently logged in as '%s'. If this is not you, please log in below.") % tgt[unique_field.to_sym] }
       end
 
       if params['redirection_loop_intercepted']
@@ -332,9 +345,9 @@ module CASServer
       begin
         if @service
           if !@renew && tgt && !tgt_error
-            st = generate_service_ticket(@service, tgt.username, tgt)
+            st = generate_service_ticket(@service, tgt[unique_field.to_sym], tgt)
             service_with_ticket = service_uri_with_ticket(@service, st)
-            $LOG.info("User '#{tgt.username}' authenticated based on ticket granting cookie. Redirecting to service '#{@service}'.")
+            $LOG.info("User '#{tgt[unique_field.to_sym] }' authenticated based on ticket granting cookie. Redirecting to service '#{@service}'.")
             redirect service_with_ticket, 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
           elsif @gateway
             $LOG.info("Redirecting unauthenticated gateway request to service '#{@service}'.")
@@ -524,7 +537,7 @@ module CASServer
 
       if tgt
         CASServer::Model::TicketGrantingTicket.transaction do
-          $LOG.debug("Deleting Service/Proxy Tickets for '#{tgt}' for user '#{tgt.username}'")
+          $LOG.debug("Deleting Service/Proxy Tickets for '#{tgt}' for user '#{tgt[unique_field.to_sym]}'")
           tgt.granted_service_tickets.each do |st|
             send_logout_notification_for_service_ticket(st) if config[:enable_single_sign_out]
             # TODO: Maybe we should do some special handling if send_logout_notification_for_service_ticket fails?
@@ -534,18 +547,18 @@ module CASServer
           end
 
           pgts = CASServer::Model::ProxyGrantingTicket.find(:all,
-            :conditions => [CASServer::Model::Base.connection.quote_table_name(CASServer::Model::ServiceTicket.table_name)+".username = ?", tgt.username],
+            :conditions => [CASServer::Model::Base.connection.quote_table_name(CASServer::Model::ServiceTicket.table_name)+".#{unique_field} = ?", tgt[unique_field.to_sym] ],
             :include => :service_ticket)
           pgts.each do |pgt|
-            $LOG.debug("Deleting Proxy-Granting Ticket '#{pgt}' for user '#{pgt.service_ticket.username}'")
+            $LOG.debug("Deleting Proxy-Granting Ticket '#{pgt}' for user '#{pgt.service_ticket[unique_field.to_sym] }'")
             pgt.destroy
           end
 
-          $LOG.debug("Deleting #{tgt.class.name.demodulize} '#{tgt}' for user '#{tgt.username}'")
+          $LOG.debug("Deleting #{tgt.class.name.demodulize} '#{tgt}' for user '#{tgt[unique_field.to_sym] }'")
           tgt.destroy
         end
 
-        $LOG.info("User '#{tgt.username}' logged out.")
+        $LOG.info("User '#{tgt[unique_field.to_sym] }' logged out.")
       else
         $LOG.warn("User tried to log out without a valid ticket-granting ticket.")
       end
@@ -581,7 +594,7 @@ module CASServer
 			st, @error = validate_service_ticket(@service, @ticket)      
 			@success = st && !@error
 			
-			@username = st.username if @success
+			@username = st[unique_field.to_sym]  if @success
 			
       status response_status_from_error(@error) if @error
 			
@@ -605,7 +618,7 @@ module CASServer
 			@success = st && !@error
 
 			if @success
-        @username = st.username
+        @username = st[unique_field.to_sym] 
         if @pgt_url
           pgt = generate_proxy_granting_ticket(@pgt_url, st)
           @pgtiou = pgt.iou if pgt
@@ -639,7 +652,7 @@ module CASServer
 
       @extra_attributes = {}
       if @success
-        @username = t.username
+        @username = t[unique_field.to_sym]
 
         if t.kind_of? CASServer::Model::ProxyTicket
           @proxies << t.granted_by_pgt.service_ticket.service

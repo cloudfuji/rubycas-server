@@ -1,6 +1,5 @@
 require 'uri'
 require 'net/https'
-
 require "#{File.expand_path(File.dirname(__FILE__))}/model"
 
 # Encapsulates CAS functionality. This module is meant to be included in
@@ -27,31 +26,31 @@ module CASServer::CAS
   # The optional 'extra_attributes' parameter takes a hash of additional attributes
   # that will be sent along with the username in the CAS response to subsequent
   # validation requests from clients.
-  def generate_ticket_granting_ticket(username, extra_attributes = {})
+  def generate_ticket_granting_ticket(unique_id, extra_attributes = {})
     # 3.6 (ticket granting cookie/ticket)
     tgt = TicketGrantingTicket.new
     tgt.ticket = "TGC-" + CASServer::Utils.random_string
-    tgt.username = username
+    tgt[unique_field.to_sym] = unique_id
     tgt.extra_attributes = extra_attributes
     tgt.client_hostname = @env['HTTP_X_FORWARDED_FOR'] || @env['REMOTE_HOST'] || @env['REMOTE_ADDR']
     tgt.save!
     $LOG.debug("Generated ticket granting ticket '#{tgt.ticket}' for user" +
-      " '#{tgt.username}' at '#{tgt.client_hostname}'" +
+      " '#{tgt[:unique_field]}' at '#{tgt.client_hostname}'" +
       (extra_attributes.blank? ? "" : " with extra attributes #{extra_attributes.inspect}"))
     tgt
   end
 
-  def generate_service_ticket(service, username, tgt)
+  def generate_service_ticket(service, unique_id, tgt)
     # 3.1 (service ticket)
     st = ServiceTicket.new
     st.ticket = "ST-" + CASServer::Utils.random_string
     st.service = service
-    st.username = username
+    st[unique_field.to_sym] = unique_id
     st.granted_by_tgt_id = tgt.id
     st.client_hostname = @env['HTTP_X_FORWARDED_FOR'] || @env['REMOTE_HOST'] || @env['REMOTE_ADDR']
     st.save!
     $LOG.debug("Generated service ticket '#{st.ticket}' for service '#{st.service}'" +
-      " for user '#{st.username}' at '#{st.client_hostname}'")
+      " for user '#{st[unique_field.to_sym]}' at '#{st.client_hostname}'")
     st
   end
 
@@ -60,13 +59,13 @@ module CASServer::CAS
     pt = ProxyTicket.new
     pt.ticket = "PT-" + CASServer::Utils.random_string
     pt.service = target_service
-    pt.username = pgt.service_ticket.username
+    pt[unique_field.to_sym] = pgt.service_ticket[unique_field.to_sym]
     pt.granted_by_pgt_id = pgt.id
     pt.granted_by_tgt_id = pgt.service_ticket.granted_by_tgt.id
     pt.client_hostname = @env['HTTP_X_FORWARDED_FOR'] || @env['REMOTE_HOST'] || @env['REMOTE_ADDR']
     pt.save!
     $LOG.debug("Generated proxy ticket '#{pt.ticket}' for target service '#{pt.service}'" +
-      " for user '#{pt.username}' at '#{pt.client_hostname}' using proxy-granting" +
+      " for user '#{pt[unique_field.to_sym]}' at '#{pt.client_hostname}' using proxy-granting" +
       " ticket '#{pgt.ticket}'")
     pt
   end
@@ -151,9 +150,9 @@ module CASServer::CAS
       if settings.config[:maximum_session_lifetime] && Time.now - tgt.created_on > settings.config[:maximum_session_lifetime]
 	tgt.destroy
         error = "Your session has expired. Please log in again."
-        $LOG.info "Ticket granting ticket '#{ticket}' for user '#{tgt.username}' expired."
+        $LOG.info "Ticket granting ticket '#{ticket}' for user '#{tgt[unique_field.to_sym]}' expired."
       else
-        $LOG.info "Ticket granting ticket '#{ticket}' for user '#{tgt.username}' successfully validated."
+        $LOG.info "Ticket granting ticket '#{ticket}' for user '#{tgt[unique_field.to_sym]}' successfully validated."
       end
     else
       error = "Invalid ticket granting ticket '#{ticket}' (no matching ticket found in the database)."
@@ -180,11 +179,11 @@ module CASServer::CAS
         error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has expired.")
         $LOG.warn "Ticket '#{ticket}' has expired."
       elsif !st.matches_service? service
-        error = Error.new(:INVALID_SERVICE, "The ticket '#{ticket}' belonging to user '#{st.username}' is valid,"+
+        error = Error.new(:INVALID_SERVICE, "The ticket '#{ticket}' belonging to user '#{st[unique_field.to_sym]}' is valid,"+
           " but the requested service '#{service}' does not match the service '#{st.service}' associated with this ticket.")
         $LOG.warn "#{error.code} - #{error.message}"
       else
-        $LOG.info("Ticket '#{ticket}' for service '#{service}' for user '#{st.username}' successfully validated.")
+        $LOG.info("Ticket '#{ticket}' for service '#{service}' for user '#{st[unique_field.to_sym]}' successfully validated.")
       end
     else
       error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' not recognized.")
@@ -204,10 +203,10 @@ module CASServer::CAS
 
     if pt.kind_of?(CASServer::Model::ProxyTicket) && !error
       if not pt.granted_by_pgt
-        error = Error.new(:INTERNAL_ERROR, "Proxy ticket '#{pt}' belonging to user '#{pt.username}' is not associated with a proxy granting ticket.")
+        error = Error.new(:INTERNAL_ERROR, "Proxy ticket '#{pt}' belonging to user '#{pt[unique_field.to_sym]}' is not associated with a proxy granting ticket.")
       elsif not pt.granted_by_pgt.service_ticket
         error = Error.new(:INTERNAL_ERROR, "Proxy granting ticket '#{pt.granted_by_pgt}'"+
-          " (associated with proxy ticket '#{pt}' and belonging to user '#{pt.username}' is not associated with a service ticket.")
+          " (associated with proxy ticket '#{pt}' and belonging to user '#{pt[unique_field.to_sym]}' is not associated with a service ticket.")
       end
     end
 
@@ -220,7 +219,7 @@ module CASServer::CAS
       $LOG.warn("#{error.code} - #{error.message}")
     elsif pgt = ProxyGrantingTicket.find_by_ticket(ticket)
       if pgt.service_ticket
-        $LOG.info("Proxy granting ticket '#{ticket}' belonging to user '#{pgt.service_ticket.username}' successfully validated.")
+        $LOG.info("Proxy granting ticket '#{ticket}' belonging to user '#{pgt.service_ticket[unique_field.to_sym]}' successfully validated.")
       else
         error = Error.new(:INTERNAL_ERROR, "Proxy granting ticket '#{ticket}' is not associated with a service ticket.")
         $LOG.error("#{error.code} - #{error.message}")
