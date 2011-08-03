@@ -2,13 +2,16 @@ class CreateInitialStructure < ActiveRecord::Migration
   def self.up
 
     require 'yaml'
-    @config_file = ['CONFIG_FILE'] || "/etc/rubycas-server/config.yml"
+    config_file = ENV['CONFIG_FILE'] || "/etc/rubycas-server/config.yml"
     
     begin
-      @config = YAML.load_file(config_file)
-      @unique_column = config["unique_column"] || "username"
+      cas_config = YAML.load_file(config_file)
+      @unique_column = cas_config["unique_column"] || "username"
     rescue Exception => e
-      @unique_column = "username"
+      puts "=X"*30
+      puts "#{e.message}"
+      puts "=X"*30
+      @unique_column = "username123"
     end
 
     # Oracle table names cannot exceed 30 chars...
