@@ -11,7 +11,7 @@ class CreateInitialStructure < ActiveRecord::Migration
       puts "=X"*30
       puts "#{e.message}"
       puts "=X"*30
-      @unique_column = "username123"
+      @unique_column = "username"
     end
 
     # Oracle table names cannot exceed 30 chars...
