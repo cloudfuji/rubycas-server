@@ -411,7 +411,10 @@ module CASServer
           render _("Could not guess the CAS login URI. Please supply a submitToURI parameter with your request.")
         end
       else
-        @message = {:message => get_flash.values.join('<br/>')}
+        @flash = get_flash
+        unless @flash.nil?
+          @message = {:message => @flash.values.join('<br/>')}
+        end
         render @template_engine, :login
       end
     end
