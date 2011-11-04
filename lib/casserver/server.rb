@@ -14,6 +14,24 @@ def unique_field
   @@cas_config['unique_column'] || "username"
 end
 
+# Added so we can reuse flash messages from the parent rail app
+# On the cas login pages - KJZ
+def get_flash
+  signed_message = request.cookies['_bushido_session']
+  
+  if signed_message.present?
+    secret = Bushido::Application.config.secret_token
+    verifier = ActiveSupport::MessageVerifier.new(secret)
+    session = verifier.verify(signed_message)
+
+    flash = session.delete('flash')
+    
+    signed_message = verifier.generate(session)
+    response.set_cookie('_bushido_session', :value => signed_message, :path => '/')
+    return flash
+  end
+end
+
 require "#{File.expand_path(File.dirname(__FILE__))}/cas.rb"
 
 require 'logger'
@@ -316,7 +334,7 @@ module CASServer
     # 2.1.1
     get "#{uri_path}/login" do
       CASServer::Utils::log_controller_action(self.class, params)
-
+      
       # make sure there's no caching
       headers['Pragma'] = 'no-cache'
       headers['Cache-Control'] = 'no-store'
@@ -393,6 +411,10 @@ module CASServer
           render _("Could not guess the CAS login URI. Please supply a submitToURI parameter with your request.")
         end
       else
+        @flash = get_flash
+        unless @flash.nil?
+          @message = {:message => @flash.values.join('<br/>')}
+        end
         render @template_engine, :login
       end
     end
