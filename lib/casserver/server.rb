@@ -511,6 +511,77 @@ module CASServer
       render @template_engine, :login
     end
 
+    # 2.2
+    get "#{uri_path}/invite" do
+      Utils::log_controller_action(self.class, params)
+      
+      # 2.2.1 (optional)
+      @service = clean_service_url(params['service'])
+
+      # 2.2.2 (required)
+      @invitation_token = params['invitation_token']
+
+      $LOG.debug("Logging in with invitation_token #{@invitation_token}, service: #{@service}, auth: #{settings.auth.inspect}")
+      
+      extra_attributes = {}
+
+      auth = BushidoInviteAuth.new
+      auth.configure(settings.config[:authenticator].first)
+
+      credentials_are_valid = auth.validate(
+                                            :invitation_token => @invitation_token,
+                                            :service => @service,
+                                            :request => @env,
+                                            :username => ""
+                                            )
+
+      @username = auth.username
+
+      if credentials_are_valid
+        $LOG.info("Credentials for username '#{@username}' successfully validated using #{auth.class.name}.")
+        $LOG.debug("Authenticator provided additional user attributes: #{extra_attributes.inspect}") unless extra_attributes.blank?
+
+        extra_attributes.merge!(auth.extra_attributes) unless auth.extra_attributes.blank?
+
+        # 3.6 (ticket-granting cookie)
+        tgt = generate_ticket_granting_ticket(@username, extra_attributes)
+        response.set_cookie('tgt', tgt.to_s)
+
+        $LOG.debug("Ticket granting cookie '#{request.cookies['tgt'].inspect}' granted to #{@username.inspect}")
+
+        if @service.blank?
+          $LOG.info("Successfully authenticated user '#{@username}' at '#{tgt.client_hostname}'. No service param was given, so we will not redirect.")
+          @message = {:type => 'confirmation', :message => _("You have successfully logged in.")}
+        else
+          @st = generate_service_ticket(@service, @username, tgt)
+
+          begin
+            service_with_ticket = service_uri_with_ticket(@service, @st, params['redirect'])
+
+            $LOG.info("Params: #{params.inspect}")
+            $LOG.info("Redirecting authenticated user '#{@username}' at '#{@st.client_hostname}' to service '#{@service}'")
+            $LOG.info("URL: #{service_with_ticket}")
+            $LOG.info("Service ticket: #{@st.inspect}")
+            
+            redirect service_with_ticket, 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
+          rescue URI::InvalidURIError
+            $LOG.error("The service '#{@service}' is not a valid URI!")
+            @message = {
+              :type => 'mistake',
+              :message => _("The target service your browser supplied appears to be invalid. Please contact your system administrator for help.")
+            }
+          end
+        end
+      else
+        $LOG.warn("Invalid credentials given for user '#{@username}'")
+        @message = {:type => 'mistake', :message => _("Sorry, we couldn't find that invitation token, or it may have expired.")}
+        status 401
+      end
+
+      render @template_engine, :login
+    end
+
+
     get /^#{uri_path}\/?$/ do
       redirect "#{config['uri_path']}/login", 303
     end
