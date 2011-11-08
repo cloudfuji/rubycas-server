@@ -363,7 +363,7 @@ module CASServer
       begin
         if @service
           if !@renew && tgt && !tgt_error
-            st = generate_service_ticket(@service, tgt[unique_field.to_sym], tgt)
+            st = generate_service_ticket(@service, tgt.username, tgt)
             service_with_ticket = service_uri_with_ticket(@service, st)
             $LOG.info("User '#{tgt[unique_field.to_sym] }' authenticated based on ticket granting cookie. Redirecting to service '#{@service}'.")
             redirect service_with_ticket, 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)

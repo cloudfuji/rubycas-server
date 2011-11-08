@@ -31,6 +31,7 @@ module CASServer::CAS
     tgt = TicketGrantingTicket.new
     tgt.ticket = "TGC-" + CASServer::Utils.random_string
     tgt[unique_field.to_sym] = unique_id
+    tgt.username = unique_id
     tgt.extra_attributes = extra_attributes
     tgt.client_hostname = @env['HTTP_X_FORWARDED_FOR'] || @env['REMOTE_HOST'] || @env['REMOTE_ADDR']
     tgt.save!
@@ -46,6 +47,7 @@ module CASServer::CAS
     st.ticket = "ST-" + CASServer::Utils.random_string
     st.service = service
     st[unique_field.to_sym] = unique_id
+    tgt.username = unique_id
     st.granted_by_tgt_id = tgt.id
     st.client_hostname = @env['HTTP_X_FORWARDED_FOR'] || @env['REMOTE_HOST'] || @env['REMOTE_ADDR']
     st.save!
