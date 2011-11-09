@@ -42,12 +42,13 @@ module CASServer::CAS
   end
 
   def generate_service_ticket(service, unique_id, tgt)
+    puts "\tService: #{service}\n\tUniqueID: #{unique_id}\n\tTGT: #{tgt}"
     # 3.1 (service ticket)
     st = ServiceTicket.new
     st.ticket = "ST-" + CASServer::Utils.random_string
     st.service = service
     st[unique_field.to_sym] = unique_id
-    tgt.username = unique_id
+    st.username = unique_id
     st.granted_by_tgt_id = tgt.id
     st.client_hostname = @env['HTTP_X_FORWARDED_FOR'] || @env['REMOTE_HOST'] || @env['REMOTE_ADDR']
     st.save!
