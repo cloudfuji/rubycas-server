@@ -11,7 +11,8 @@ def unique_field
     config_file = ENV['CONFIG_FILE'] || "/etc/rubycas-server/config.yml"
     @@cas_config = YAML.load_file(config_file)
   end
-  @@cas_config['unique_column'] || "username"
+
+  @@cas_config['authenticator']['unique_column'] || "ido_id"
 end
 
 # Added so we can reuse flash messages from the parent rail app
