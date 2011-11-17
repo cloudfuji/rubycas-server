@@ -86,8 +86,8 @@ module CASServer
       handler      = detect_rack_handler
       handler_name = handler.name.gsub(/.*::/, '')
       
-      puts "== RubyCAS-Server is starting up " +
-        "on port #{config[:port] || port} for #{environment} with backup from #{handler_name}" unless handler_name =~/cgi/i
+      # puts "== RubyCAS-Server is starting up " +
+      #   "on port #{config[:port] || port} for #{environment} with backup from #{handler_name}" unless handler_name =~/cgi/i
         
       begin
         opts = handler_options
@@ -107,7 +107,6 @@ module CASServer
     def self.quit!(server, handler_name)
       ## Use thins' hard #stop! if available, otherwise just #stop
       server.respond_to?(:stop!) ? server.stop! : server.stop
-      puts "\n== RubyCAS-Server is shutting down" unless handler_name =~/cgi/i
     end
     
     def self.print_cli_message(msg, type = :info)

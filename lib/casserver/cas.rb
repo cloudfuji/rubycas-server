@@ -29,9 +29,6 @@ module CASServer::CAS
   def generate_ticket_granting_ticket(unique_id, extra_attributes = {})
     # 3.6 (ticket granting cookie/ticket)
     tgt = TicketGrantingTicket.new
-    puts "*"*90
-    puts TicketGrantingTicket.inspect
-    puts "*"*90
     tgt.ticket = "TGC-" + CASServer::Utils.random_string
     tgt.send("#{unique_field}=".to_sym, unique_id)
     tgt.extra_attributes = extra_attributes
@@ -44,7 +41,6 @@ module CASServer::CAS
   end
 
   def generate_service_ticket(service, unique_id, tgt)
-    puts "\tService: #{service}\n\tUniqueID: #{unique_id}\n\tTGT: #{tgt}"
     # 3.1 (service ticket)
     st = ServiceTicket.new
     st.ticket = "ST-" + CASServer::Utils.random_string
