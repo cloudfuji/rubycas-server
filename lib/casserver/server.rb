@@ -574,7 +574,11 @@ module CASServer
 
         if @service.blank?
           $LOG.info("Successfully authenticated user '#{@username}' at '#{tgt.client_hostname}'. No service param was given, so we will not redirect.")
-          @message = {:type => 'confirmation', :message => _("You have successfully logged in.")}
+          unless params["redirect"].nil?
+            redirect "#{params['redirect']}", 303
+          else
+            @message = {:type => 'confirmation', :message => _("You have successfully logged in.")}
+          end
         else
           @st = generate_service_ticket(@service, @username, tgt)
 
