@@ -7,12 +7,7 @@ require 'yaml'
 @@cas_config = nil
 
 def unique_field
-  if @@cas_config.nil?
-    config_file = ENV['CONFIG_FILE'] || "/etc/rubycas-server/config.yml"
-    @@cas_config = YAML.load_file(config_file)
-  end
-
-  @@cas_config['authenticator']['unique_column'] || "ido_id"
+  "ido_id"
 end
 
 # Added so we can reuse flash messages from the parent rail app
@@ -221,6 +216,8 @@ module CASServer
     def self.init_authenticators!
       auth = []
       
+      puts config.inspect
+
       if config[:authenticator].nil?
         print_cli_message "No authenticators have been configured. Please double-check your config file (#{CONFIG_FILE.inspect}).", :error
         exit 1
@@ -231,12 +228,21 @@ module CASServer
         config[:authenticator] = [config[:authenticator]] unless config[:authenticator].instance_of? Array
         config[:authenticator].each { |authenticator| auth << authenticator[:class].constantize}
       rescue NameError
+        puts "_"*90
+        puts config[:authenticator]
         if config[:authenticator].instance_of? Array
           config[:authenticator].each do |authenticator|
+                    puts "_"*90
+            puts authenticator.inspect
             if !authenticator[:source].nil?
               # config.yml explicitly names source file
+              puts "LOADING AUTHENTICATOR SOURCE"
+              puts authenticator[:source].inspect
               require authenticator[:source]
             else
+              puts "REQUIRING AUTHENTICATOR CLASS"
+              puts authenticator[:class].inspect
+              puts authenticator['class'].inspect
               # the authenticator class hasn't yet been loaded, so lets try to load it from the casserver/authenticators directory
               auth_rb = authenticator[:class].underscore.gsub('cas_server/', '')
               require "#{File.expand_path(File.dirname(__FILE__))}/"+auth_rb
