@@ -4,16 +4,6 @@ class CreateInitialStructure < ActiveRecord::Migration
     require 'yaml'
     config_file = ENV['CONFIG_FILE'] || "/etc/rubycas-server/config.yml"
     
-    begin
-      cas_config = YAML.load_file(config_file)
-      @unique_column = cas_config["unique_column"] || "username"
-    rescue Exception => e
-      puts "=X"*30
-      puts "#{e.message}"
-      puts "=X"*30
-      @unique_column = "username"
-    end
-
     # Oracle table names cannot exceed 30 chars...
     # See http://code.google.com/p/rubycas-server/issues/detail?id=15
     create_table 'casserver_lt', :force => true do |t|
@@ -29,7 +19,7 @@ class CreateInitialStructure < ActiveRecord::Migration
       t.timestamp 'created_on',        :null => false
       t.datetime  'consumed',          :null => true
       t.string    'client_hostname',   :null => false
-      t.string    @unique_column,      :null => false
+      t.string    'ido_id',      :null => false
       t.string    'type',              :null => false
       t.integer   'granted_by_pgt_id', :null => true
       t.integer   'granted_by_tgt_id', :null => true
@@ -39,7 +29,7 @@ class CreateInitialStructure < ActiveRecord::Migration
       t.string    'ticket',           :null => false
       t.timestamp 'created_on',       :null => false
       t.string    'client_hostname',  :null => false
-      t.string    @unique_column,     :null => false
+      t.string    'ido_id',     :null => false
       t.text      'extra_attributes', :null => true
     end
 
